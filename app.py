@@ -54,76 +54,27 @@ if 'requirements_checked' not in st.session_state:
         st.error(f'Error loading saved progress: {str(e)}')
 
 def load_university_data():
-    data = {
-        'University': [
-            'UT Austin', 'University of Florida', 'UC Davis', 'Texas A&M',
-            'University of South Florida', 'University of Central Florida',
-            'San Jose State University', 'University of Illinois Chicago',
-            'Florida Institute of Technology', 'Florida International University'
-        ],
-        'Category': [
-            'Self Apply', 'Self Apply', 'Self Apply', 'Self Apply',
-            'Self Apply', 'Self Apply', 'IDP Consultancy', 'IDP Consultancy',
-            'IDP Consultancy', 'IDP Consultancy'
-        ],
-        'Program': [
-            'MS CS', 'MS CS', 'MS CS', 'MS DS',
-            'MS CS', 'MS CS', 'MS CS', 'MS CS',
-            'MS CS', 'MS CS'
-        ],
-        'Deadlines': [
-            'Dec 15, 2024', 'June 1, 2024', 'Dec 15, 2024', 'Jan 15, 2025',
-            'June 1, 2024', 'July 1, 2024', 'May 1, 2024', 'June 15, 2024',
-            'June 1, 2024', 'June 1, 2024'
-        ],
-        'Application_Fee': [
-            '$75', '$65', '$120', '$65',
-            '$50', '$55', '$70', '$70',
-            '$75', '$60'
-        ],
-        'Requirements': [
-            'GRE (optional), TOEFL(88), 3 LORs, SOP',
-            'GRE (optional), TOEFL(80), 3 LORs, SOP',
-            'GRE (required), TOEFL(90), 3 LORs, SOP',
-            'GRE (optional), TOEFL(80), 3 LORs, SOP',
-            'GRE (optional), TOEFL(79), 2 LORs, SOP',
-            'GRE (optional), TOEFL(80), 2 LORs, SOP',
-            'GRE (optional), TOEFL(80), 2 LORs, SOP',
-            'GRE (optional), TOEFL(80), 3 LORs, SOP',
-            'GRE (optional), TOEFL(79), 2 LORs, SOP',
-            'GRE (optional), TOEFL(80), 2 LORs, SOP'
-        ],
-        'Expected_Qualities': [
-            'Strong CS background, Research experience, 3.5+ GPA',
-            'Programming skills, 3.0+ GPA, Project experience',
-            'Research aptitude, 3.3+ GPA, Strong technical background',
-            'Statistics background, 3.0+ GPA, Programming skills',
-            'CS fundamentals, 3.0+ GPA, Technical projects',
-            'Programming proficiency, 3.0+ GPA, Project portfolio',
-            'Technical skills, 3.0+ GPA, Industry experience preferred',
-            'Strong academic record, 3.0+ GPA, Research/Project experience',
-            'CS background, 3.0+ GPA, Technical expertise',
-            'Programming skills, 3.0+ GPA, Project experience'
-        ],
-        'Apply_Link': [
-            'https://enterprise.login.utexas.edu/idp/profile/SAML2/Redirect/SSO?execution=e2s1',
-            'https://www.applyweb.com/cgi-bin/ustat?formcode=uflgrad',
-            'https://grad.ucdavis.edu/apply',
-            'https://texasam2025.liaisoncas.com/applicant-ux/#/dashboard',
-            'https://www.usf.edu/graduate-studies/admission',
-            'https://applynow.graduate.ucf.edu/apply/',
-            'https://www.sjsu.edu/admissions/graduate/want-to-apply',
-            'https://admissions.uic.edu/graduate-professional/apply',
-            'https://www.fit.edu/admissions/apply',
-            'https://admissions.fiu.edu/how-to-apply/graduate-applicant'
-        ],
-        'Program_Fee': [
-            '$48,000', '$32,000', '$52,000', '$38,000',
-            '$28,000', '$30,000', '$35,000', '$42,000',
-            '$31,000', '$29,000'
-        ],
-    }
-    return pd.DataFrame(data)
+    try:
+        # Read the CSV file
+        df = pd.read_csv('data.csv')
+        
+        # Ensure proper formatting of monetary values
+        money_columns = ['Application_Fee', 'Tuition_Per_Year', 'Living_Costs_Yearly', 
+                        'Total_Cost_2Years', 'Avg_Starting_Salary', 'ROI_5Year']
+        for col in money_columns:
+            df[col] = df[col].str.replace('$', '').str.replace(',', '')\
+                            .astype(float).apply(lambda x: f"${x:,.0f}")
+        
+        # Ensure percentage formatting
+        percentage_columns = ['Acceptance_Rate', 'Placement_Rate']
+        for col in percentage_columns:
+            df[col] = df[col].str.rstrip('%') + '%'
+        
+        return df
+    except Exception as e:
+        st.error(f"Error loading data: {str(e)}")
+        return pd.DataFrame()  # Return empty DataFrame if there's an error
+
 
 # Title and introduction
 st.title('🎓 University Application Tracker')
@@ -205,12 +156,14 @@ with st.container():
             "University": st.column_config.TextColumn("University", width=200),
             "Requirements": st.column_config.TextColumn("Requirements", width=300),
             "Expected_Qualities": st.column_config.TextColumn("Expected Qualities", width=300),
-            "Apply_Link": st.column_config.LinkColumn("Application Link", width=150)
+            "Apply_Link": st.column_config.LinkColumn("Application Link", width=200),
+            "Program_Fee": st.column_config.TextColumn("Program Fee", width=200),
+            "Acceptance_Rate": st.column_config.TextColumn("Acceptance Rate", width=100),  # Add this line
+            "Program": st.column_config.TextColumn("Program", width=200)
         },
         hide_index=True,
         use_container_width=True
     )
-
 # University-specific requirements tracking
 st.header('University-Specific Progress')
 for idx, row in filtered_df.iterrows():
